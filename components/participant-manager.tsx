@@ -134,6 +134,10 @@ export default function ParticipantManager({
                 profile_image: imagePath,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
+                total_matches_played: 0,
+                total_wins: 0,
+                total_losses: 0,
+                total_points: 0,
               },
             }
           : player

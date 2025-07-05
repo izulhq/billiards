@@ -8,11 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Trophy, Users, Plus, List } from "lucide-react";
+import { Trophy, Users, Plus, List, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ParticipantManager from "@/components/participant-manager";
 import TournamentSchedule from "@/components/tournament-schedule";
 import TournamentList from "@/components/tournament-list";
+import Statistics from "@/components/statistics";
 import { supabase } from "@/lib/supabase";
 
 export type TournamentType = "league" | "cup";
@@ -21,6 +22,10 @@ export type PlayerProfile = {
   id: string;
   name: string;
   profile_image?: string | null;
+  total_matches_played: number;
+  total_wins: number;
+  total_losses: number;
+  total_points: number;
   created_at: string;
   updated_at: string;
 };
@@ -61,7 +66,7 @@ export type Tournament = {
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<
-    "list" | "select" | "participants" | "tournament"
+    "list" | "statistics" | "select" | "participants" | "tournament"
   >("list");
   const [tournamentType, setTournamentType] =
     useState<TournamentType>("league");
@@ -136,10 +141,11 @@ export default function Home() {
               Buat Turnamen
             </Button>
             <Button
+              onClick={() => setCurrentStep("statistics")}
               size="lg"
               className="px-8 bg-white hover:bg-gray-100 text-gray-800 border border-gray-600"
             >
-              <List className="h-5 w-5 mr-2" />
+              <BarChart3 className="h-5 w-5 mr-2" />
               Statistik
             </Button>
           </div>
@@ -227,6 +233,10 @@ export default function Home() {
         </div>
       </div>
     );
+  }
+
+  if (currentStep === "statistics") {
+    return <Statistics onBack={() => setCurrentStep("list")} />;
   }
 
   if (currentStep === "participants") {
