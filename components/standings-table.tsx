@@ -2,12 +2,25 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Award, List } from "lucide-react";
+import { Trophy, List } from "lucide-react";
 import type { Player } from "@/app/page";
 
 interface StandingsTableProps {
   players: Player[];
 }
+
+const getWinRateColor = (winRate: number) => {
+  if (winRate < 10) return "bg-red-500 hover:bg-red-600";
+  if (winRate < 20) return "bg-red-500 hover:bg-red-600";
+  if (winRate < 30) return "bg-orange-500 hover:bg-orange-600";
+  if (winRate < 40) return "bg-yellow-400 hover:bg-yellow-500";
+  if (winRate < 50) return "bg-lime-500 hover:bg-lime-600";
+  if (winRate < 60) return "bg-green-500 hover:bg-green-600";
+  if (winRate < 70) return "bg-teal-500 hover:bg-teal-600";
+  if (winRate < 80) return "bg-blue-500 hover:bg-blue-600";
+  if (winRate < 90) return "bg-indigo-500 hover:bg-indigo-600";
+  return "bg-purple-500 hover:bg-purple-600";
+};
 
 export default function StandingsTable({ players }: StandingsTableProps) {
   const sortedPlayers = [...players].sort((a, b) => {
@@ -18,29 +31,10 @@ export default function StandingsTable({ players }: StandingsTableProps) {
   });
 
   const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1:
-        return <Trophy className="h-5 w-5 text-yellow-500" />;
-      case 2:
-        return <Medal className="h-5 w-5 text-gray-400" />;
-      case 3:
-        return <Award className="h-5 w-5 text-amber-600" />;
-      default:
-        return null;
+    if (position === 1) {
+      return <Trophy className="h-5 w-5 text-yellow-500" />;
     }
-  };
-
-  const getPositionBadge = (position: number) => {
-    switch (position) {
-      case 1:
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">1st</Badge>;
-      case 2:
-        return <Badge className="bg-gray-400 hover:bg-gray-500">2nd</Badge>;
-      case 3:
-        return <Badge className="bg-amber-600 hover:bg-amber-700">3rd</Badge>;
-      default:
-        return <Badge variant="outline">{position}th</Badge>;
-    }
+    return null;
   };
 
   return (
@@ -78,15 +72,30 @@ export default function StandingsTable({ players }: StandingsTableProps) {
                   <tr
                     key={player.id}
                     className={`border-b hover:bg-gray-50 ${
-                      position <= 3
-                        ? "bg-gradient-to-r from-yellow-50 to-transparent"
+                      position === 1
+                        ? "bg-gradient-to-r from-yellow-50 to-white border-gray-200 text-blue-700"
+                        : position === sortedPlayers.length &&
+                          sortedPlayers.length > 1
+                        ? "bg-gradient-to-r from-red-50 to-white border-gray-200 text-red-700"
                         : ""
                     }`}
                   >
                     <td className="p-3">
                       <div className="flex items-center gap-2">
-                        {getPositionIcon(position)}
-                        {getPositionBadge(position)}
+                        {position === 1 ? getPositionIcon(position) : null}
+                        <Badge
+                          variant="outline"
+                          className={
+                            position === 1
+                              ? "bg-blue-100 border-blue-300 text-blue-700"
+                              : position === sortedPlayers.length &&
+                                sortedPlayers.length > 1
+                              ? "bg-red-100 border-red-300 text-red-700"
+                              : ""
+                          }
+                        >
+                          #{position}
+                        </Badge>
                       </div>
                     </td>
                     <td className="p-3">
@@ -112,24 +121,9 @@ export default function StandingsTable({ players }: StandingsTableProps) {
                     </td>
                     <td className="text-center p-3">
                       <Badge
-                        className={`
-                        ${
-                          Number.parseFloat(winRate) < 33
-                            ? "bg-red-500 hover:bg-red-600 shadow-md"
-                            : ""
-                        }
-                        ${
-                          Number.parseFloat(winRate) >= 34 &&
-                          Number.parseFloat(winRate) < 66
-                            ? "bg-green-400 hover:bg-green-500 shadow-md"
-                            : ""
-                        }
-                        ${
-                          Number.parseFloat(winRate) > 66
-                            ? "bg-blue-400 hover:bg-blue-500 shadow-md"
-                            : ""
-                        }
-                      `}
+                        className={`${getWinRateColor(
+                          Number.parseFloat(winRate)
+                        )} text-white`}
                       >
                         {winRate}%
                       </Badge>
@@ -154,16 +148,36 @@ export default function StandingsTable({ players }: StandingsTableProps) {
               <div
                 key={player.id}
                 className={`p-4 rounded-lg border ${
-                  position <= 3
+                  position === 1
                     ? "bg-gradient-to-r from-yellow-50 to-transparent border-yellow-200"
+                    : position === sortedPlayers.length &&
+                      sortedPlayers.length > 1
+                    ? "bg-gradient-to-r from-red-50 to-white border-red-300"
                     : "bg-white border-gray-200"
                 }`}
               >
                 {/* Top row: Position and Player */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    {getPositionIcon(position)}
-                    {getPositionBadge(position)}
+                    {position === 1 ? getPositionIcon(position) : null}
+                    <Badge
+                      variant={
+                        position === 1
+                          ? "default"
+                          : position === sortedPlayers.length &&
+                            sortedPlayers.length > 1
+                          ? "destructive"
+                          : "outline"
+                      }
+                      className={
+                        position === sortedPlayers.length &&
+                        sortedPlayers.length > 1
+                          ? "bg-red-100 border-red-300 text-red-700"
+                          : ""
+                      }
+                    >
+                      #{position}
+                    </Badge>
                   </div>
                   <span
                     className={`font-medium text-lg ${
@@ -185,14 +199,9 @@ export default function StandingsTable({ players }: StandingsTableProps) {
                   <div className="text-center">
                     <div className="text-gray-500 text-xs">Win Rate</div>
                     <Badge
-                      className={`text-xs ${
-                        Number.parseFloat(winRate) < 33
-                          ? "bg-red-500 hover:bg-red-600"
-                          : Number.parseFloat(winRate) >= 34 &&
-                            Number.parseFloat(winRate) < 66
-                          ? "bg-green-400 hover:bg-green-500"
-                          : "bg-blue-400 hover:bg-blue-500"
-                      }`}
+                      className={`text-xs ${getWinRateColor(
+                        Number.parseFloat(winRate)
+                      )} text-white`}
                     >
                       {winRate}%
                     </Badge>

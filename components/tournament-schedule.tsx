@@ -11,11 +11,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trophy, RotateCcw, Home, Plane, Crown, Edit3 } from "lucide-react";
+import {
+  Trophy,
+  RotateCcw,
+  Home,
+  Plane,
+  Crown,
+  Edit3,
+  ArrowLeft,
+  Plus,
+} from "lucide-react";
 import type { Player, Match, Tournament } from "@/app/page";
 import MatchCard from "@/components/match-card";
 import StandingsTable from "@/components/standings-table";
 import { supabase } from "@/lib/supabase";
+import { Separator } from "@radix-ui/react-select";
 
 interface TournamentScheduleProps {
   tournament: Tournament & { home_away_enabled?: boolean };
@@ -247,6 +257,9 @@ export default function TournamentSchedule({
 
       // Reload tournament data
       loadTournamentData();
+
+      // Check if tournament should be marked as complete
+      checkAndUpdateTournamentStatus();
     } catch (error) {
       console.error("Error updating match result:", error);
     }
@@ -338,6 +351,9 @@ export default function TournamentSchedule({
 
       // Reload tournament data
       loadTournamentData();
+
+      // Check if tournament should be marked as complete
+      checkAndUpdateTournamentStatus();
     } catch (error) {
       console.error("Error editing match result:", error);
     }
@@ -349,6 +365,58 @@ export default function TournamentSchedule({
 
   const getUpcomingMatches = () => {
     return matches.filter((match) => !match.completed);
+  };
+
+  // Check if tournament is complete (all matches finished)
+  const isTournamentComplete = () => {
+    return matches.length > 0 && getUpcomingMatches().length === 0;
+  };
+
+  // Manually mark tournament as completed
+  const markTournamentComplete = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to mark this tournament as completed? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("tournaments")
+        .update({
+          status: "completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tournament.id);
+
+      if (error) throw error;
+
+      // Trigger parent component to refresh or show success message
+      window.location.reload(); // Simple approach - you could improve this
+    } catch (error) {
+      console.error("Error marking tournament as complete:", error);
+    }
+  };
+
+  // Automatically check and update tournament status after each match
+  const checkAndUpdateTournamentStatus = async () => {
+    if (isTournamentComplete() && tournament.status === "active") {
+      try {
+        const { error } = await supabase
+          .from("tournaments")
+          .update({
+            status: "completed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", tournament.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error auto-updating tournament status:", error);
+      }
+    }
   };
 
   if (loading) {
@@ -374,21 +442,45 @@ export default function TournamentSchedule({
               <Trophy className="h-8 w-8 mr-3 text-blue-600" />
               {tournament.name}
             </a>
-            <Button
-              onClick={onReset}
-              variant="outline"
-              className="bg-blue-500 text-white hover:bg-blue-600 hover:text-white shadow-sm text-xs sm:text-md"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Create New
-            </Button>
+            <div className="flex space-x-2 justify-end items-center">
+              <Button
+                variant="outline"
+                onClick={onReset}
+                className="bg-white hover:bg-blue-500 text-blue-600 hover:text-white text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
+              </Button>
+              <Button
+                onClick={onReset}
+                variant="outline"
+                className="bg-blue-500 text-white hover:bg-blue-600 hover:text-white shadow-sm text-xs sm:text-sm"
+              >
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Create New</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row justify-center items-center space-x-4 border border-gray-200 text-gray-600 bg-white p-2 rounded-md shadow-sm w-full max-w-2xl">
+          <div className="flex flex-col sm:flex-row justify-center items-center space-x-8 border border-gray-200 text-gray-600 bg-white p-2 rounded-md shadow-sm w-full">
+            <Badge
+              className={`
+                  ${
+                    tournament.status === "completed"
+                      ? "bg-green-500 hover:bg-green-600"
+                      : tournament.status === "active"
+                      ? "bg-blue-500 hover:bg-blue-600"
+                      : "bg-gray-500 hover:bg-gray-600"
+                  }
+                `}
+            >
+              {tournament.status.charAt(0).toUpperCase() +
+                tournament.status.slice(1)}
+            </Badge>
             <p className="flex text-center">
               <strong className="text-black">
                 {tournament.type.charAt(0).toUpperCase() +
                   tournament.type.slice(1)}{" "}
-              </strong>{" "}
+              </strong>
               &nbsp;Tournament
             </p>
             <p className="flex text-center">
@@ -399,16 +491,46 @@ export default function TournamentSchedule({
               <strong className="text-black">{matches.length}</strong>
               &nbsp;Total Matches
             </p>
-            <p className="flex text-center">
-              {homeAwayEnabled && (
+            {homeAwayEnabled && (
+              <p className="flex text-center">
                 <span className="inline-flex items-center justify-center gap-1 font-semibold text-black">
                   <Home className="h-4 w-4 text-blue-600" />
                   <Plane className="h-4 w-4 text-green-600" />
-                  &nbsp;Home/Away Enabled
+                  &nbsp;Home/Away
                 </span>
-              )}
-            </p>
+              </p>
+            )}{" "}
           </div>
+
+          {/* Tournament completion section */}
+          {tournament.status === "active" && (
+            <div className="text-center w-full">
+              {isTournamentComplete() ? (
+                <div className="bg-blue-50 border border-blue-300 rounded-lg p-2 sm:pl-4 mt-4 flex flex-col sm:flex-row items-center justify-between">
+                  <p className="text-blue-800 mb-2 sm:mb-0 text-sm sm:text-base">
+                    <strong>🎉 All matches completed!</strong> Tournament is
+                    ready to be marked as finished
+                  </p>
+                  <Button
+                    onClick={markTournamentComplete}
+                    className="bg-blue-500 hover:bg-blue-600 text-xs sm:text-sm w-full sm:w-auto"
+                  >
+                    <Trophy className="h-4 w-4 mr-2" />
+                    Mark Tournament Complete
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={markTournamentComplete}
+                  variant="outline"
+                  className="mb-4 text-orange-600 border-orange-300 hover:bg-orange-50 text-xs sm:text-sm w-full sm:w-auto mt-2"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Mark as Complete (Force)
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="schedule" className="space-y-6">

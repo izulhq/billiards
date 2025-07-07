@@ -95,7 +95,11 @@ export default function TournamentList({
         {tournaments.map((tournament) => (
           <Card
             key={tournament.id}
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+            className={`cursor-pointer hover:shadow-lg transition-shadow ${
+              tournament.status === "completed"
+                ? "border-blue-200 bg-blue-50"
+                : ""
+            }`}
             onClick={() => onTournamentOpen(tournament)}
           >
             <CardHeader className="pb-2 md:pb-3">
