@@ -7,8 +7,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "GSE Billiard tod",
+  description: "sewajarnya mahasiswa semester tua",
   generator: "v0.dev",
 };
 
