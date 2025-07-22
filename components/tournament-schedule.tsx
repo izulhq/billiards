@@ -20,6 +20,8 @@ import {
   Edit3,
   ArrowLeft,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { Player, Match, Tournament } from "@/app/page";
 import MatchCard from "@/components/match-card";
@@ -40,6 +42,8 @@ export default function TournamentSchedule({
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const matchesPerPage = 10;
 
   useEffect(() => {
     loadTournamentData();
@@ -367,6 +371,36 @@ export default function TournamentSchedule({
     return matches.filter((match) => !match.completed);
   };
 
+  // Pagination helpers
+  const getPaginatedUpcomingMatches = () => {
+    const upcomingMatches = getUpcomingMatches();
+    const startIndex = (currentPage - 1) * matchesPerPage;
+    const endIndex = startIndex + matchesPerPage;
+    return upcomingMatches.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = () => {
+    const upcomingMatches = getUpcomingMatches();
+    return Math.ceil(upcomingMatches.length / matchesPerPage);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < getTotalPages()) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Reset to first page when matches change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [matches]);
+
   // Check if tournament is complete (all matches finished)
   const isTournamentComplete = () => {
     return matches.length > 0 && getUpcomingMatches().length === 0;
@@ -551,27 +585,57 @@ export default function TournamentSchedule({
                 <br className="inline sm:hidden"></br>Completed:{" "}
                 {getCompletedMatches().length}
               </p>
+              {getTotalPages() > 1 && (
+                <p className="text-gray-500 text-sm mt-2">
+                  Page {currentPage} of {getTotalPages()}
+                </p>
+              )}
             </div>
 
             <div className="grid gap-4">
-              {getUpcomingMatches()
-                .slice(0, 10)
-                .map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    players={players}
-                    onUpdateResult={updateMatchResult}
-                  />
-                ))}
+              {getPaginatedUpcomingMatches().map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  players={players}
+                  onUpdateResult={updateMatchResult}
+                />
+              ))}
             </div>
 
-            {getUpcomingMatches().length > 10 && (
-              <div className="text-center py-4">
-                <p className="text-gray-500">
-                  Showing next 10 matches. {getUpcomingMatches().length - 10}{" "}
-                  more matches will appear as these are completed.
-                </p>
+            {/* Pagination Controls */}
+            {getTotalPages() > 1 && (
+              <div className="flex justify-center items-center gap-4 py-4">
+                <Button
+                  variant="outline"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    {(currentPage - 1) * matchesPerPage + 1} -{" "}
+                    {Math.min(
+                      currentPage * matchesPerPage,
+                      getUpcomingMatches().length
+                    )}{" "}
+                    of {getUpcomingMatches().length} matches
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={goToNextPage}
+                  disabled={currentPage === getTotalPages()}
+                  className="flex items-center gap-2"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             )}
 
